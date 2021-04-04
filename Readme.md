@@ -3,7 +3,7 @@
 This is a simple tool to import csv files into sqlite. It offers a few
 niceties over
 
-````
+```
 .headers on
 .mode csv
 .import foo.csv foo
