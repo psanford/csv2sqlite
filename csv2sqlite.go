@@ -6,8 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -19,6 +21,7 @@ var (
 	tableName     = flag.String("table", "csv", "Table name")
 	createColumns = flag.Bool("create-columns", true, "Create any missing columns in table")
 	trunc         = flag.Bool("trunc", false, "Truncate table before inserting")
+	ephemeral     = flag.Bool("i", false, "Create an ephemeral db and start an interactive session")
 )
 
 func main() {
@@ -33,8 +36,30 @@ func main() {
 		truncateTable()
 	}
 
+	if *ephemeral {
+		f, err := ioutil.TempFile("", "csv2sqlite")
+		if err != nil {
+			log.Fatalf("create tmpfile err: %s", err)
+		}
+		f.Close()
+		name := f.Name()
+		defer os.Remove(name)
+		*db = name
+	}
+
 	for _, filename := range args {
 		processCSV(filename)
+	}
+
+	if *ephemeral {
+		cmd := exec.Command("sqlite3", *db)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
