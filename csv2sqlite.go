@@ -22,10 +22,19 @@ var (
 	createColumns = flag.Bool("create-columns", true, "Create any missing columns in table")
 	trunc         = flag.Bool("trunc", false, "Truncate table before inserting")
 	ephemeral     = flag.Bool("i", false, "Create an ephemeral db and start an interactive session")
+	separatorStr  = flag.String("separator", ",", "Record separator")
+	separator     rune
 )
 
 func main() {
 	flag.Parse()
+
+	if len(*separatorStr) != 1 {
+		log.Fatalf("--separator must be a single character")
+	}
+
+	s := *separatorStr
+	separator = rune(s[0])
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -90,6 +99,7 @@ func processCSV(filename string) {
 	defer db.Close()
 
 	r := csv.NewReader(f)
+	r.Comma = separator
 	header, err := r.Read()
 	if err != nil {
 		log.Fatalf("csv read header err: %s", err)
