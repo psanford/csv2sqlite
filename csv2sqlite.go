@@ -109,6 +109,7 @@ func processCSV(filename string) {
 	regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
 	for i, h := range header {
 		h = strings.ToLower(h)
+		h = strings.TrimSpace(h)
 		h = regex.ReplaceAllString(h, "_")
 		header[i] = h
 		missingHeaders[h] = struct{}{}
