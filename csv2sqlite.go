@@ -115,7 +115,7 @@ func processCSV(filename string) {
 		missingHeaders[h] = struct{}{}
 	}
 
-	createStmt := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", *tableName, strings.Join(header, ",\n"))
+	createStmt := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n\t%s)", *tableName, strings.Join(header, ",\n\t"))
 	_, err = db.Exec(createStmt)
 	if err != nil {
 		log.Fatalf("Create table err: %s (%s)", err, createStmt)
