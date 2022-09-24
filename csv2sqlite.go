@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var (
@@ -73,7 +73,7 @@ func main() {
 }
 
 func truncateTable() {
-	db, err := sql.Open("sqlite3", *db)
+	db, err := sql.Open("sqlite", *db)
 	if err != nil {
 		log.Fatalf("open db err: %s", err)
 	}
@@ -92,7 +92,7 @@ func processCSV(filename string) {
 	}
 	defer f.Close()
 
-	db, err := sql.Open("sqlite3", *db)
+	db, err := sql.Open("sqlite", *db)
 	if err != nil {
 		log.Fatalf("open db err: %s", err)
 	}
