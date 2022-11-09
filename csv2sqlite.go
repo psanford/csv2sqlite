@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"database/sql"
 	"encoding/csv"
 	"flag"
@@ -38,7 +39,7 @@ func main() {
 
 	args := flag.Args()
 	if len(args) < 1 {
-		log.Fatalf("usage: %s <input.csv>", os.Args[0])
+		log.Fatalf("usage: %s <input.csv> [input2.csv...]", os.Args[0])
 	}
 
 	if *trunc {
@@ -85,6 +86,14 @@ func truncateTable() {
 	}
 }
 
+func decompressReader(f *os.File) (io.Reader, error) {
+	if strings.HasSuffix(f.Name(), ".gz") {
+		return gzip.NewReader(f)
+	}
+
+	return f, nil
+}
+
 func processCSV(filename string) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -92,13 +101,18 @@ func processCSV(filename string) {
 	}
 	defer f.Close()
 
+	dr, err := decompressReader(f)
+	if err != nil {
+		log.Fatalf("decompressReader err: %s", err)
+	}
+
 	db, err := sql.Open("sqlite", *db)
 	if err != nil {
 		log.Fatalf("open db err: %s", err)
 	}
 	defer db.Close()
 
-	r := csv.NewReader(f)
+	r := csv.NewReader(dr)
 	r.Comma = separator
 	header, err := r.Read()
 	if err != nil {
