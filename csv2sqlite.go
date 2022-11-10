@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"compress/gzip"
 	"database/sql"
 	"encoding/csv"
@@ -24,6 +25,7 @@ var (
 	trunc         = flag.Bool("trunc", false, "Truncate table before inserting")
 	ephemeral     = flag.Bool("i", false, "Create an ephemeral db and start an interactive session")
 	separatorStr  = flag.String("separator", ",", "Record separator")
+	headerF       = flag.String("header", "", "Comma seperated header to use (files will be assumed to have no header")
 	separator     rune
 )
 
@@ -112,11 +114,25 @@ func processCSV(filename string) {
 	}
 	defer db.Close()
 
+	_, err = db.Exec("PRAGMA journal_mode = WAL")
+	if err != nil {
+		log.Fatalf("PRAGMA journal_mode = WAL err: %s", err)
+	}
+
 	r := csv.NewReader(dr)
 	r.Comma = separator
-	header, err := r.Read()
-	if err != nil {
-		log.Fatalf("csv read header err: %s", err)
+	var header []string
+	if *headerF != "" {
+		headerReader := csv.NewReader(bytes.NewBufferString(*headerF))
+		header, err = headerReader.Read()
+		if err != nil {
+			log.Fatalf("-header parse err: %s", err)
+		}
+	} else {
+		header, err = r.Read()
+		if err != nil {
+			log.Fatalf("csv read header err: %s", err)
+		}
 	}
 
 	missingHeaders := make(map[string]struct{})
@@ -188,7 +204,7 @@ func processCSV(filename string) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Read err %s: %s", filename, err)
 		}
 
 		for i, v := range line {
