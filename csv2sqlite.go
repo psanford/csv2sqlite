@@ -138,11 +138,20 @@ func processCSV(filename string) {
 	missingHeaders := make(map[string]struct{})
 	regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
 	for i, h := range header {
+		var uniqPart int
 		h = strings.ToLower(h)
 		h = strings.TrimSpace(h)
 		h = regex.ReplaceAllString(h, "_")
-		header[i] = h
-		missingHeaders[h] = struct{}{}
+		uniqH := h
+		for _, existing := missingHeaders[uniqH]; existing; _, existing = missingHeaders[uniqH] {
+			uniqPart++
+			uniqH = fmt.Sprintf("%s_%d", h, uniqPart)
+			if uniqPart > 100 {
+				log.Fatalf("too many name collisions for %s, something is probably wrong with your csv file", h)
+			}
+		}
+		header[i] = uniqH
+		missingHeaders[uniqH] = struct{}{}
 	}
 
 	createStmt := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n\t%s)", *tableName, strings.Join(header, ",\n\t"))
