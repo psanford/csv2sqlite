@@ -19,14 +19,15 @@ import (
 )
 
 var (
-	db            = flag.String("db", "csv.db", "Database file")
-	tableName     = flag.String("table", "csv", "Table name")
-	createColumns = flag.Bool("create-columns", true, "Create any missing columns in table")
-	trunc         = flag.Bool("trunc", false, "Truncate table before inserting")
-	ephemeral     = flag.Bool("i", false, "Create an ephemeral db and start an interactive session")
-	separatorStr  = flag.String("separator", ",", "Record separator")
-	headerF       = flag.String("header", "", "Comma seperated header to use (files will be assumed to have no header")
-	separator     rune
+	db              = flag.String("db", "csv.db", "Database file")
+	tableName       = flag.String("table", "csv", "Table name")
+	createColumns   = flag.Bool("create-columns", true, "Create any missing columns in table")
+	trunc           = flag.Bool("trunc", false, "Truncate table before inserting")
+	ephemeral       = flag.Bool("i", false, "Create an ephemeral db and start an interactive session")
+	separatorStr    = flag.String("separator", ",", "Record separator")
+	headerF         = flag.String("header", "", "Comma seperated header to use (files will be assumed to have no header")
+	syntheticHeader = flag.Bool("synthetic-header", false, "Create a synthetic header if you have no header")
+	separator       rune
 )
 
 func main() {
@@ -133,6 +134,21 @@ func processCSV(filename string) {
 		if err != nil {
 			log.Fatalf("csv read header err: %s", err)
 		}
+	}
+
+	if *syntheticHeader {
+		for i := range header {
+			header[i] = fmt.Sprintf("c%d", i)
+		}
+
+		// reset reader
+		f.Seek(0, io.SeekStart)
+		dr, err = decompressReader(f)
+		if err != nil {
+			log.Fatalf("decompressReader err: %s", err)
+		}
+		r = csv.NewReader(dr)
+		r.Comma = separator
 	}
 
 	missingHeaders := make(map[string]struct{})
